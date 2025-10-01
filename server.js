@@ -1,6 +1,18 @@
 // es-module -> import, commonjs -> require
 const express = require("express"); // express 안에 있는 이미 구현되어 있는 코드들을 express 객체 형태로 불러오기
 const cors = require("cors"); // 설치한 의존성 패키지 cors를 불러오기
+const dotenv = require("dotenv"); // 설치한 의존성 패키지 dotenv를 불러오기
+const { createClient } = require("@supabase/supabase-js"); // 구조분해 할당
+
+dotenv.config(); // .env -> KEY => SUPABASE_KEY
+// NODE -> pocess.env (환경변수) // cf. env file
+
+// const supabaseKey = process.env.SUPABASE_KEY;
+// const supabaseUrl = process.env.SUPABASE_URL;
+const { SUPABASE_KEY: supabaseKey, SUPABASE_URL: supabaseUrl } = process.env;
+console.log("supabaseKey : ", supabaseKey);
+console.log("supabaseUrl : ", supabaseUrl);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express(); // () -> 호출해서 사용
 // 포트 -> 컴퓨터 서비스가 1개만 있는게 아님. email, db, server 1, server 2...
