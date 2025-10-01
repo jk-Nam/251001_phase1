@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>여행계획</title>
+    <style>
+      #travel-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+      #travel-plans {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+      #travel-plans div {
+        margin-bottom: 20px;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <form id="travel-form">
+        <!-- 여행지 -->
+        <input
+          type="text"
+          name="destination"
+          placeholder="여행지 입력"
+          required
+        />
+        <!-- 여행 목적 -->
+        <input
+          type="text"
+          name="purpose"
+          placeholder="여행 목적 입력"
+          required
+        />
+        <!-- 인원 수 -->
+        <input
+          type="number"
+          name="people-count"
+          placeholder="인원 수 입력"
+          min="1"
+          required
+        />
+        <!-- 시작일 -->
+        <label>
+          <span>시작일</span>
+          <input type="date" name="start-date" required />
+        </label>
+        <!-- 종료일 -->
+        <label>
+          <span>종료일</span>
+          <input type="date" name="end-date" required />
+        </label>
+        <button type="submit">분석</button>
+      </form>
+    </section>
+    <section id="travel-plans"></section>
+    <script>
+      const form = document.getElementById("travel-form");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        console.log(data);
+        const baseUrl = "http://localhost:3000"; // 배포 시 교체 필요
+        const response = await fetch(`${baseUrl}/plan`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+          alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+          console.error("Server error:", response.statusText);
+          return;
+        }
+        alert("여행 계획이 성공적으로 생성되었습니다!");
+        form.reset();
+        renderPlans();
+      });
+      const plans = document.querySelector("#travel-plans");
+      async function renderPlans() {
+        const baseUrl = "http://localhost:3000"; // 배포 시 교체 필요
+        const response = await fetch(`${baseUrl}/plan`);
+        if (!response.ok) {
+          console.error("Failed to fetch plans:", response.statusText);
+          return;
+        }
+        const data = await response.json();
+        plans.innerHTML = "";
+        for (const p of data) {
+          const plan = document.createElement("div");
+          plan.innerHTML = `<h3>${p.destination} (${p["start-date"]} ~ ${p["end-date"]})</h3>
+            <p>목적: ${p.purpose}</p>
+            <p>인원: ${p["people-count"]}명</p>
+            <p>계획: ${p["ai-plan"]}</p>
+            <p>예산: ${p["ai-min-budget"]}원 ~ ${p["ai-max-budget"]}원</p>`;
+          const removeButton = document.createElement("button");
+          removeButton.textContent = "삭제";
+          removeButton.addEventListener("click", async () => {
+            const deleteResponse = await fetch(`${baseUrl}/plan`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ id: p.id }),
+            });
+            if (!deleteResponse.ok) {
+              alert("삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+              console.error("Delete error:", deleteResponse.statusText);
+              return;
+            }
+            alert("여행 계획이 성공적으로 삭제되었습니다!");
+            renderPlans();
+          });
+          plan.appendChild(removeButton);
+          plans.appendChild(plan);
+        }
+      }
+      document.addEventListener("DOMContentLoaded", renderPlans);
+    </script>
+  </body>
+</html>
