@@ -18,7 +18,7 @@
       <form id="planForm">
         <input type="text" name="destination" placeholder="장소" />
         <input type="text" name="purpose" placeholder="목적" />
-        <input type="text" name="people_count" placeholder="인원수" />
+        <input type="number" name="people_count" placeholder="인원수" />
         <label>
           시작일 :
           <input type="date" name="start_date" />
@@ -45,20 +45,17 @@
         for (const p of data) {
           const planItem = document.createElement("div");
           planItem.innerHTML = `
-      <h4>${p.destination}</h4>
-      <div>[목적] ${p.purpose}</div>
-      <div>[인원수] ${p.people_count}</div>
-      <div>[시작일] ${p.start_date}</div>
-      <div>[종료일] ${p.end_date}</div>
-      <div>[추천계획] ${p.ai_suggestion}</div>
-    `;
+            <h4>${p.destination}</h4>
+            <div>[목적] ${p.purpose}</div>
+            <div>[인원수] ${p.people_count}</div>
+            <div>[시작일] ${p.start_date}</div>
+            <div>[종료일] ${p.end_date}</div>
+            <div>[추천계획] ${p.ai_suggestion}</div>
+            <div>[최소예산] ${p.ai_min_budget}</div>
+            <div>[최대예산] ${p.ai_max_budget}</div>
+          `;
           const removeBtn = document.createElement("button");
           removeBtn.textContent = "삭제";
-          removeBtn.addEventListener("click", async () => {
-            // const planId = p.id;
-            const { id: planId } = p;
-          });
-          planItem.append(removeBtn);
           removeBtn.addEventListener("click", async () => {
             // const planId = p.id;
             const { id: planId } = p;
@@ -76,6 +73,7 @@
             alert("정상적으로 삭제되었습니다!");
             await renderPlans();
           });
+          planItem.append(removeBtn);
           planBox.append(planItem);
         }
       }
@@ -92,16 +90,17 @@
         const response = await fetch(url, {
           method: "POST", // #1
           headers: {
-            "content-type": "application/json", // #2
+            "Content-Type": "application/json", // #2
           },
           body: JSON.stringify(planObj), // #3
         });
         if (!response.ok) {
-          return alert("생성 과정에서 에러가 발생했습니다.");
+          return alert("생성 과정에서 에러가 발생했습니다!");
         }
-        alert("정상적으로 생성되었습니다.");
+        alert("정상적으로 생성되었습니다!");
         await renderPlans();
       });
+
       document.addEventListener("DOMContentLoaded", renderPlans);
     </script>
   </body>
