@@ -1,0 +1,27 @@
+{
+  "name": "251001_phase1",
+  "version": "1.0.0",
+  "description": "1.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jk-Nam/251001_phase1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jk-Nam/251001_phase1/issues"
+  },
+  "homepage": "https://github.com/jk-Nam/251001_phase1#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
