@@ -22,6 +22,7 @@ const port = 3000; // cra. next -> express. / 5173.
 
 // cors에러 해결을 위한 미들웨어 적용
 app.use(cors()); // 모든 출처에 대한 허용 (보안적으로 바람직 X)
+app.use(express.json()); // req.body -> json
 
 // get, post...
 // app.방식(접속경로, 핸들러)
@@ -39,6 +40,15 @@ app.get("/plans", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
   res.json(data);
+});
+
+app.post("/plans", async (req, res) => {
+  const plan = req.body;
+  const { error } = await supabase.from("tour_plan").insert(plan);
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  res.status(201).json();
 });
 
 //DOM listener / server '대기' -> 특정한 요청 -> 응답
