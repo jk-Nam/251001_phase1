@@ -6,13 +6,28 @@
     <title>여행 계획 생성기</title>
   </head>
   <body>
+    <section id="planBox"></section>
     <script>
-      // 브라우저를 통한 접속을 mocking
-      //   fetch("http://localhost:3000") // express 서버에 접근
-      //     .then((res) => {
-      //       // 그 결과를 text로 받고 (Promise)
-      //       res.text().then(console.log);
-      //     });
+      const planBox = document.querySelector("#planBox");
+      async function renderPlans() {
+        const url = "http://localhost:3000/plans";
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log(data);
+        planBox.innerHTML = "";
+        for (const p of data) {
+          const planItem = document.createElement("div");
+          planItem.innerHTML = `
+            <h4>${p.destination}</h4>
+            <div>[목적] ${p.purpose}</div>
+            <div>[인원수] ${p.people_count}</div>
+            <div>[시작일] ${p.start_date}</div>
+            <div>[종료일] ${p.end_date}</div>
+          `;
+          planBox.append(planItem);
+        }
+      }
+      document.addEventListener("DOMContentLoaded", renderPlans);
     </script>
   </body>
 </html>

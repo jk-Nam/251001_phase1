@@ -33,6 +33,14 @@ app.get("/", (req, res) => {
   res.send("bye");
 });
 
+app.get("/plans", async (req, res) => {
+  const { data, error } = await supabase.from("tour_plan").select("*");
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  res.json(data);
+});
+
 //DOM listener / server '대기' -> 특정한 요청 -> 응답
 app.listen(port, () => {
   console.log(`서버가 ${port}번 포트로 실행 중입니다.`);
