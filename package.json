@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/jk-Nam/251001_phase1#readme",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0"
   },
   "devDependencies": {
