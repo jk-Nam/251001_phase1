@@ -75,7 +75,7 @@
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         console.log(data);
-        const baseUrl = "http://localhost:3000"; // 배포 시 교체 필요
+        const baseUrl = "http://https://two51001-phase1.onrender.com/plans";
         const response = await fetch(`${baseUrl}/plan`, {
           method: "POST",
           headers: {
@@ -94,7 +94,7 @@
       });
       const plans = document.querySelector("#travel-plans");
       async function renderPlans() {
-        const baseUrl = "http://localhost:3000"; // 배포 시 교체 필요
+        const baseUrl = "http://https://two51001-phase1.onrender.com/plans";
         const response = await fetch(`${baseUrl}/plan`);
         if (!response.ok) {
           console.error("Failed to fetch plans:", response.statusText);
