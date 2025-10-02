@@ -4,12 +4,16 @@ const dotenv = require("dotenv");
 const { createClient } = require("@supabase/supabase-js");
 const { GoogleGenAI } = require("@google/genai");
 const { Groq } = require("groq-sdk");
+const multer = require("multer");
 
 dotenv.config();
 const { SUPABASE_KEY: supabaseKey, SUPABASE_URL: supabaseUrl } = process.env;
 console.log("supabaseKey", supabaseKey);
 console.log("supabaseUrl", supabaseUrl);
 const supabase = createClient(supabaseUrl, supabaseKey);
+// 파일 처리
+const storage = multer.memoryStorage(); // 메모리 -> 실행할 때 임시로 파일 관리
+const upload = multer({ storage }); // 업로드를 처리해주는 미들웨어
 
 const app = express();
 const port = 3000;
@@ -30,8 +34,37 @@ app.get("/plans", async (req, res) => {
 });
 
 // npm install groq-sdk
-app.post("/plans", async (req, res) => {
-  const plan = req.body;
+// upload.single("image") -> form 데이터 중에 image라는 속성(네임)을 req.file -> req.body
+app.post("/plans", upload.single("image"), async (req, res) => {
+  const plan = req.body; // 여기서부턴 이미지 존재 여부로 분기
+  console.log(req.file);
+  if (req.file) {
+    console.log("이미지 파일이 존재");
+    //  Date.now() -> 파일 중복을 막기 위해 시간을 나타내는 숫자를 앞에 접두사로 작성
+    const filename = `${Date.now()}_${req.file.originalname}`;
+    const { error: uploadError } = await supabase.storage
+      .from("tour-images") // 버켓명
+      // buffer : 텍스트 형태로 나타낸 파일. mimtype : 파일의 속성. 형태
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+    if (uploadError) {
+      console.error("이미지 업로드 실패", uploadError);
+      return res.status(400).json({ error: uploadError.message });
+    }
+    // 여기까지 진행되면 server에 파일이 업로드 됨
+    const { data: urlData } = supabase.storage
+      .from("tour-images") // 버킷명
+      .getPublicUrl(filename); // 생성파일 이름 -> 공개 URL
+    plan.image_url = urlData.publicUrl; // 내가 업로드한 파일의 접속 링크 -> DB
+
+    // 이미지 분석
+    const analysis = await analyzeImage(req.file.buffer, req.file.mimetype);
+    console.log(analysis);
+    const { gemini, groq } = analysis;
+    plan.purpose += `\n뒤는 목적과 관련된 사진에 대한 설명입니다. ${gemini}`;
+    plan.purpose += `\n뒤는 목적과 관련된 사진에 대한 설명입니다. ${groq}`;
+  }
   const result = await chaining(plan);
   plan.ai_suggestion = result;
   // 최종적으로 작성된 계획 -> 최소/최대 budget이 얼마나 나올까?
@@ -150,5 +183,59 @@ async function ensemble(result) {
     // rest 연산자로 해체해서 넣어줘야함 (배열의 경우)
     minBudget: Math.min(...responses.map((v) => v.min_budget)),
     maxBudget: Math.max(...responses.map((v) => v.max_budget)),
+  };
+}
+
+async function analyzeImage(buffer, mimeType) {
+  // Gemini 호출
+  const ai = new GoogleGenAI({});
+  const visionPrompt =
+    "제공 받은 여행 관련 이미지를 분석하여, 어떠한 장소인지 어떠한 목적을 기대할 수 있는지를 한국어로 200자 이내로 적어주세요.";
+  const b64 = buffer.toString("base64");
+  const geminiResponse = await ai.models.generateContent({
+    // https://ai.google.dev/gemini-api/docs/models?hl=ko
+    model: "gemini-2.5-flash", // "gemini-2.5-flash-lite",
+    contents: [
+      {
+        parts: [
+          { text: visionPrompt },
+          {
+            inlineData: {
+              data: b64,
+              mimeType,
+            },
+          },
+        ],
+      },
+    ],
+  });
+  // Groq 호출
+  const groq = new Groq();
+  const groqResponse = await groq.chat.completions.create({
+    // https://console.groq.com/docs/vision
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    // meta-llama/llama-4-maverick-17b-128e-instruct
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: visionPrompt,
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${b64}`,
+            },
+          },
+        ],
+      },
+    ],
+  });
+
+  return {
+    gemini: geminiResponse.text,
+    groq: groqResponse.choices[0].message.content,
   };
 }

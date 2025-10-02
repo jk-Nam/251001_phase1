@@ -11,21 +11,37 @@
         gap: 6px;
         max-width: 240px;
       }
+
+      /* 가로폭 제한 */
+      .tourImg {
+        max-width: 240px;
+        width: 100%;
+      }
     </style>
   </head>
   <body>
     <section>
       <form id="planForm">
-        <input type="text" name="destination" placeholder="장소" />
-        <input type="text" name="purpose" placeholder="목적" />
-        <input type="number" name="people_count" placeholder="인원수" />
+        <!-- value를 통한 기본값 입력 -->
+        <input type="text" name="destination" placeholder="장소" value="서울" />
+        <input type="text" name="purpose" placeholder="목적" value="관광" />
+        <input
+          type="number"
+          name="people_count"
+          placeholder="인원수"
+          value="1"
+        />
         <label>
           시작일 :
-          <input type="date" name="start_date" />
+          <input type="date" name="start_date" value="2025-11-01" />
         </label>
         <label>
           종료일 :
-          <input type="date" name="end_date" />
+          <input type="date" name="end_date" value="2025-12-31" />
+        </label>
+        <!-- 이미지 파일 업로드를 위한 input -->
+        <label>
+          이미지 : <input type="file" name="image" accept="image/*" />
         </label>
         <button>생성</button>
       </form>
@@ -56,6 +72,11 @@
             <div>[추천계획] ${p.ai_suggestion}</div>
             <div>[최소예산] ${p.ai_min_budget}</div>
             <div>[최대예산] ${p.ai_max_budget}</div>
+            ${
+              p.image_url
+                ? `<div><img class="tourImg" src=${p.image_url}></div>`
+                : ""
+            }
           `;
           const removeBtn = document.createElement("button");
           removeBtn.textContent = "삭제";
@@ -79,19 +100,23 @@
           planBox.append(planItem);
         }
       }
+      // 폼 처리
       planForm.addEventListener("submit", async (event) => {
         event.preventDefault();
+        // 파일을 추가하면 JSON이 아님 -> multipart -> 브라우저가 알아서 해줌
         const formData = new FormData(event.currentTarget);
         console.log(...formData.entries());
-        const planObj = Object.fromEntries(formData.entries());
-        console.log(planObj);
+        // JSON -> multypart로 전환
+        // const planObj = Object.fromEntries(formData.entries());
+        // console.log(planObj);
         // 추가하는 URL
         const response = await fetch(`${apiServerUrl}/plans`, {
           method: "POST", // #1
-          headers: {
-            "Content-Type": "application/json", // #2
-          },
-          body: JSON.stringify(planObj), // #3
+          // headers: {
+          //   "Content-Type": "application/json", // #2
+          // },
+          // body: JSON.stringify(planObj), // #3
+          body: formData, // body에 직접 formData를 넣으면 브라우저가 알아서 header를 넣어줌
         });
         if (!response.ok) {
           return alert("생성 과정에서 에러가 발생했습니다!");
