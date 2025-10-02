@@ -3,134 +3,103 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>여행계획</title>
+    <title>여행 계획 생성기</title>
     <style>
-      #travel-form {
+      #planForm {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        max-width: 400px;
-        margin: 0 auto;
-      }
-      #travel-plans {
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        background-color: #f9f9f9;
-      }
-      #travel-plans div {
-        margin-bottom: 20px;
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
+        gap: 6px;
+        max-width: 240px;
       }
     </style>
   </head>
   <body>
     <section>
-      <form id="travel-form">
-        <!-- 여행지 -->
-        <input
-          type="text"
-          name="destination"
-          placeholder="여행지 입력"
-          required
-        />
-        <!-- 여행 목적 -->
-        <input
-          type="text"
-          name="purpose"
-          placeholder="여행 목적 입력"
-          required
-        />
-        <!-- 인원 수 -->
-        <input
-          type="number"
-          name="people-count"
-          placeholder="인원 수 입력"
-          min="1"
-          required
-        />
-        <!-- 시작일 -->
+      <form id="planForm">
+        <input type="text" name="destination" placeholder="장소" />
+        <input type="text" name="purpose" placeholder="목적" />
+        <input type="number" name="people_count" placeholder="인원수" />
         <label>
-          <span>시작일</span>
-          <input type="date" name="start-date" required />
+          시작일 :
+          <input type="date" name="start_date" />
         </label>
-        <!-- 종료일 -->
         <label>
-          <span>종료일</span>
-          <input type="date" name="end-date" required />
+          종료일 :
+          <input type="date" name="end_date" />
         </label>
-        <button type="submit">분석</button>
+        <button>생성</button>
       </form>
     </section>
-    <section id="travel-plans"></section>
+    <section id="planBox"></section>
     <script>
-      const form = document.getElementById("travel-form");
-
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        console.log(data);
-        const baseUrl = "http://https://two51001-phase1.onrender.com/plans";
-        const response = await fetch(`${baseUrl}/plan`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-        if (!response.ok) {
-          alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-          console.error("Server error:", response.statusText);
-          return;
-        }
-        alert("여행 계획이 성공적으로 생성되었습니다!");
-        form.reset();
-        renderPlans();
-      });
-      const plans = document.querySelector("#travel-plans");
+      // DOM
+      const planBox = document.querySelector("#planBox");
+      const planForm = document.querySelector("#planForm");
+      // API 서버 주소
+      // const apiServerUrl = "https://two51001-phase01.onrender.com";
+      const apiServerUrl = "http://localhost:3000";
+      // 함수
       async function renderPlans() {
-        const baseUrl = "http://https://two51001-phase1.onrender.com/plans";
-        const response = await fetch(`${baseUrl}/plan`);
-        if (!response.ok) {
-          console.error("Failed to fetch plans:", response.statusText);
-          return;
-        }
+        // 불러오는 API
+        const response = await fetch(`${apiServerUrl}/plans`);
         const data = await response.json();
-        plans.innerHTML = "";
+        console.log(data);
+        planBox.innerHTML = "";
         for (const p of data) {
-          const plan = document.createElement("div");
-          plan.innerHTML = `<h3>${p.destination} (${p["start-date"]} ~ ${p["end-date"]})</h3>
-            <p>목적: ${p.purpose}</p>
-            <p>인원: ${p["people-count"]}명</p>
-            <p>계획: ${p["ai-plan"]}</p>
-            <p>예산: ${p["ai-min-budget"]}원 ~ ${p["ai-max-budget"]}원</p>`;
-          const removeButton = document.createElement("button");
-          removeButton.textContent = "삭제";
-          removeButton.addEventListener("click", async () => {
-            const deleteResponse = await fetch(`${baseUrl}/plan`, {
+          const planItem = document.createElement("div");
+          planItem.innerHTML = `
+            <h4>${p.destination}</h4>
+            <div>[목적] ${p.purpose}</div>
+            <div>[인원수] ${p.people_count}</div>
+            <div>[시작일] ${p.start_date}</div>
+            <div>[종료일] ${p.end_date}</div>
+            <div>[추천계획] ${p.ai_suggestion}</div>
+            <div>[최소예산] ${p.ai_min_budget}</div>
+            <div>[최대예산] ${p.ai_max_budget}</div>
+          `;
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "삭제";
+          removeBtn.addEventListener("click", async () => {
+            const { id: planId } = p;
+            // 삭제하는 API
+            const response = await fetch(`${apiServerUrl}/plans`, {
               method: "DELETE",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ id: p.id }),
+              body: JSON.stringify({ planId }),
             });
-            if (!deleteResponse.ok) {
-              alert("삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-              console.error("Delete error:", deleteResponse.statusText);
-              return;
+            if (!response.ok) {
+              return alert("삭제 과정에서 에러가 발생했습니다!");
             }
-            alert("여행 계획이 성공적으로 삭제되었습니다!");
-            renderPlans();
+            alert("정상적으로 삭제되었습니다!");
+            await renderPlans();
           });
-          plan.appendChild(removeButton);
-          plans.appendChild(plan);
+          planItem.append(removeBtn);
+          planBox.append(planItem);
         }
       }
+      planForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        console.log(...formData.entries());
+        const planObj = Object.fromEntries(formData.entries());
+        console.log(planObj);
+        // 추가하는 URL
+        const response = await fetch(`${apiServerUrl}/plans`, {
+          method: "POST", // #1
+          headers: {
+            "Content-Type": "application/json", // #2
+          },
+          body: JSON.stringify(planObj), // #3
+        });
+        if (!response.ok) {
+          return alert("생성 과정에서 에러가 발생했습니다!");
+        }
+        alert("정상적으로 생성되었습니다!");
+        await renderPlans();
+      });
+
       document.addEventListener("DOMContentLoaded", renderPlans);
     </script>
   </body>
